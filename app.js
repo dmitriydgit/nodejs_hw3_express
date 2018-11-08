@@ -7,7 +7,7 @@ var app = express();
 app.use(express.static(__dirname + "/public"));
 app.use(express.json());
 app.use(readParametrs);
-app.use(countTime);
+//app.use(countTime);
 app.set("views", __dirname + "/views");
 app.set("view engine", "hbs");
 
@@ -36,13 +36,13 @@ app.get("/post-data", function (request, response) {
 	response.json(post);
 });
 
-app.get("/getList", function (request, response, countTime) {
+app.get("/getList", countTime, function (request, response, countTime) {
 	var list = require("./data/list");
 	response.json(list);
-	countTime();
+	//countTime();
 });
 
-app.get("/getListItemById/:id", function (request, response) {
+app.get("/getListItemById/:id", countTime, function (request, response) {
 	var list = require("./data/list")
 	var query = { _id: request.params.id };
 	var result = list.find(item => {
@@ -65,23 +65,21 @@ app.post("/contact", (req, res) => {
 
 function countTime(request, response, next) {
 	console.log("Starting");
-	const NS_PER_SEC = 1e9;
 	var start = process.hrtime();
-	var startDate = new Date();
-	//console.log("start : ", start);  /*Что есть время старта????*/
-	console.log(`Bench start ${start[1] * 1e-6} miliseconds`);
+	const startMs = (start[0] * 1000 + start[1] / 1000000).toFixed(2);
+	console.log(`Started: ${request.originalUrl} at ${startMs} miliseconds`);
 
-	setTimeout(function () {
-		console.log("Ending");
-		var end = process.hrtime(start);
-		var endHr = process.hrtime();
-		console.log(`Bench end ${endHr[1] * 1e-6}`)
-		console.log(`Pure time ${end[1] * 1e-6} miliseconds`);
-		console.log('**********************************************************************')
-		//console.log(`Benchmark took ${end[1] * NS_PER_SEC} nanoseconds`);
-		//[seconds, nanoseconds]
+	request.on('end', () => {
+		setTimeout(function () {
+			console.log("Ending");
+			var end = process.hrtime(start);
+			const endMs = (end[0] * 1000 + end[1] / 1000000).toFixed(2);
+			console.log(end);
+			console.log(`Pure time requested ${request.originalUrl} took ${endMs} miliseconds`);
+			console.log('**********************************************************************')
+		}, 1000);
+	})
 
-	}, 1000);
 	next();
 }
 
@@ -89,6 +87,9 @@ function readParametrs(request, response, next) {
 	let result = {};
 	result.path = request.path;
 	result.querystring = request.query;
+	console.log('*******************************************************************');
+	console.log("Params : ", request.query);
+
 	console.log("Result : ", result);
 	console.log('*******************************************************************');
 	next();
@@ -97,3 +98,7 @@ function readParametrs(request, response, next) {
 // начинаем прослушивать подключения на 3000 порту
 const port = process.env.port || 3000;
 app.listen(3000, () => console.log(`listening ${port}...`));
+
+//getListItemById
+//getList
+//http://localhost:3000/getListItemById/?params=5
